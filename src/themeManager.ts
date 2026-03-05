@@ -185,7 +185,7 @@ export class ThemeManager {
 
     /** 获取本地自定义主题目录路径 */
     private getCustomThemeDir(): string {
-        return this.app.vault.configDir + '/plugins/obsidian-mp-publisher/custom';
+        return this.app.vault.configDir + '/plugins/mp-publisher/custom';
     }
 
     /** 加载本地自定义 CSS 主题 */
