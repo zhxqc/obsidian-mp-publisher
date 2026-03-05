@@ -1,0 +1,284 @@
+/* 暗色主题 - 科技感 */
+
+.mp-content-section {
+  font-size: 16px;
+  color: #cbd5e1;
+  line-height: 1.75;
+  letter-spacing: 0.03em;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  background-color: #1e293b;
+}
+
+/* 标题 */
+.mp-content-section h1 {
+  margin: 32px 0 16px;
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #f1f5f9;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border-left: 4px solid #38bdf8;
+  border-radius: 0 6px 6px 0;
+}
+
+.mp-content-section h2 {
+  margin: 28px 0 14px;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #38bdf8;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #334155;
+}
+
+.mp-content-section h3 {
+  margin: 24px 0 12px;
+  font-size: 1.25em;
+  font-weight: bold;
+  color: #7dd3fc;
+}
+
+.mp-content-section h4,
+.mp-content-section h5,
+.mp-content-section h6 {
+  margin: 20px 0 10px;
+  font-size: 1em;
+  font-weight: bold;
+  color: #94a3b8;
+}
+
+/* 段落 */
+.mp-content-section p {
+  margin: 1em 0;
+  line-height: 1.75;
+  color: #cbd5e1;
+}
+
+/* 列表 */
+.mp-content-section ul,
+.mp-content-section ol {
+  padding-left: 2em;
+  margin: 1em 0;
+  color: #cbd5e1;
+}
+
+.mp-content-section li {
+  margin: 0.5em 0;
+  line-height: 1.75;
+}
+
+/* 引用 */
+.mp-content-section blockquote {
+  border-left: 4px solid #38bdf8;
+  padding: 12px 20px;
+  background: #0f172a;
+  margin: 1em 0;
+  color: #94a3b8;
+  font-style: italic;
+  border-radius: 0 6px 6px 0;
+}
+
+.mp-content-section blockquote p {
+  margin: 0;
+  line-height: inherit;
+}
+
+/* 代码块 */
+.mp-content-section pre {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 1em;
+  margin: 1.2em 0;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.mp-content-section pre .mp-code-header {
+  margin-bottom: 1em;
+  display: flex;
+  gap: 6px;
+}
+
+.mp-content-section pre .mp-code-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.mp-content-section pre .mp-code-dot:nth-child(1) { background-color: #ff5f56; }
+.mp-content-section pre .mp-code-dot:nth-child(2) { background-color: #ffbd2e; }
+.mp-content-section pre .mp-code-dot:nth-child(3) { background-color: #27c93f; }
+
+.mp-content-section pre code {
+  color: #e2e8f0;
+}
+
+.mp-content-section code:not(pre code) {
+  background: #334155;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #38bdf8;
+  font-size: 0.9em;
+}
+
+/* 链接 */
+.mp-content-section a {
+  color: #38bdf8;
+  text-decoration: none;
+  border-bottom: 1px solid #38bdf8;
+}
+
+/* 强调 */
+.mp-content-section strong {
+  font-weight: bold;
+  color: #f1f5f9;
+}
+
+.mp-content-section em {
+  font-style: italic;
+  color: #cbd5e1;
+}
+
+.mp-content-section del {
+  text-decoration: line-through;
+  color: #64748b;
+}
+
+/* 表格 */
+.mp-content-section table {
+  width: 100%;
+  margin: 1em 0;
+  border-collapse: collapse;
+  border: 1px solid #334155;
+}
+
+.mp-content-section th {
+  background: #0f172a;
+  font-weight: bold;
+  color: #38bdf8;
+  padding: 10px;
+  border: 1px solid #334155;
+}
+
+.mp-content-section td {
+  padding: 10px;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+}
+
+.mp-content-section tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+/* 分隔线 */
+.mp-content-section hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+  margin: 24px 0;
+}
+
+/* 图片 */
+.mp-content-section img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5em auto;
+  border-radius: 8px;
+  border: 1px solid #334155;
+}
+
+/* 脚注 */
+.mp-content-section .footnote-ref,
+.mp-content-section .footnote-backref {
+  color: #38bdf8;
+  text-decoration: none;
+  font-size: 0.9em;
+}
+
+/* Callout 提示框 */
+.mp-content-section .mp-callout {
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 1em 0;
+  border-left: 4px solid #38bdf8;
+  background: #0f172a;
+}
+
+.mp-content-section .mp-callout-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-weight: bold;
+  font-size: 1em;
+  line-height: 1.5;
+}
+
+.mp-content-section .mp-callout-content {
+  font-size: 0.95em;
+  line-height: 1.7;
+  color: #cbd5e1;
+}
+
+.mp-content-section .mp-callout-content p {
+  margin: 4px 0;
+  padding: 0;
+  line-height: 1.7;
+  color: #cbd5e1;
+}
+
+.mp-content-section .mp-callout-note { border-left-color: #60a5fa; background: #172554; }
+.mp-content-section .mp-callout-note .mp-callout-title { color: #60a5fa; }
+.mp-content-section .mp-callout-info { border-left-color: #60a5fa; background: #172554; }
+.mp-content-section .mp-callout-info .mp-callout-title { color: #60a5fa; }
+.mp-content-section .mp-callout-tip { border-left-color: #2dd4bf; background: #042f2e; }
+.mp-content-section .mp-callout-tip .mp-callout-title { color: #2dd4bf; }
+.mp-content-section .mp-callout-hint { border-left-color: #2dd4bf; background: #042f2e; }
+.mp-content-section .mp-callout-hint .mp-callout-title { color: #2dd4bf; }
+.mp-content-section .mp-callout-important { border-left-color: #a78bfa; background: #2e1065; }
+.mp-content-section .mp-callout-important .mp-callout-title { color: #a78bfa; }
+.mp-content-section .mp-callout-warning { border-left-color: #fbbf24; background: #451a03; }
+.mp-content-section .mp-callout-warning .mp-callout-title { color: #fbbf24; }
+.mp-content-section .mp-callout-caution { border-left-color: #fbbf24; background: #451a03; }
+.mp-content-section .mp-callout-caution .mp-callout-title { color: #fbbf24; }
+.mp-content-section .mp-callout-danger { border-left-color: #f87171; background: #450a0a; }
+.mp-content-section .mp-callout-danger .mp-callout-title { color: #f87171; }
+.mp-content-section .mp-callout-error { border-left-color: #f87171; background: #450a0a; }
+.mp-content-section .mp-callout-error .mp-callout-title { color: #f87171; }
+.mp-content-section .mp-callout-bug { border-left-color: #f87171; background: #450a0a; }
+.mp-content-section .mp-callout-bug .mp-callout-title { color: #f87171; }
+.mp-content-section .mp-callout-success { border-left-color: #4ade80; background: #052e16; }
+.mp-content-section .mp-callout-success .mp-callout-title { color: #4ade80; }
+.mp-content-section .mp-callout-check { border-left-color: #4ade80; background: #052e16; }
+.mp-content-section .mp-callout-check .mp-callout-title { color: #4ade80; }
+.mp-content-section .mp-callout-done { border-left-color: #4ade80; background: #052e16; }
+.mp-content-section .mp-callout-done .mp-callout-title { color: #4ade80; }
+.mp-content-section .mp-callout-question { border-left-color: #fbbf24; background: #451a03; }
+.mp-content-section .mp-callout-question .mp-callout-title { color: #fbbf24; }
+.mp-content-section .mp-callout-help { border-left-color: #fbbf24; background: #451a03; }
+.mp-content-section .mp-callout-help .mp-callout-title { color: #fbbf24; }
+.mp-content-section .mp-callout-faq { border-left-color: #fbbf24; background: #451a03; }
+.mp-content-section .mp-callout-faq .mp-callout-title { color: #fbbf24; }
+.mp-content-section .mp-callout-failure { border-left-color: #f87171; background: #450a0a; }
+.mp-content-section .mp-callout-failure .mp-callout-title { color: #f87171; }
+.mp-content-section .mp-callout-fail { border-left-color: #f87171; background: #450a0a; }
+.mp-content-section .mp-callout-fail .mp-callout-title { color: #f87171; }
+.mp-content-section .mp-callout-missing { border-left-color: #f87171; background: #450a0a; }
+.mp-content-section .mp-callout-missing .mp-callout-title { color: #f87171; }
+.mp-content-section .mp-callout-abstract { border-left-color: #22d3ee; background: #083344; }
+.mp-content-section .mp-callout-abstract .mp-callout-title { color: #22d3ee; }
+.mp-content-section .mp-callout-summary { border-left-color: #22d3ee; background: #083344; }
+.mp-content-section .mp-callout-summary .mp-callout-title { color: #22d3ee; }
+.mp-content-section .mp-callout-tldr { border-left-color: #22d3ee; background: #083344; }
+.mp-content-section .mp-callout-tldr .mp-callout-title { color: #22d3ee; }
+.mp-content-section .mp-callout-example { border-left-color: #a78bfa; background: #2e1065; }
+.mp-content-section .mp-callout-example .mp-callout-title { color: #a78bfa; }
+.mp-content-section .mp-callout-todo { border-left-color: #60a5fa; background: #172554; }
+.mp-content-section .mp-callout-todo .mp-callout-title { color: #60a5fa; }
+.mp-content-section .mp-callout-quote { border-left-color: #94a3b8; background: #1e293b; }
+.mp-content-section .mp-callout-quote .mp-callout-title { color: #94a3b8; }
+.mp-content-section .mp-callout-cite { border-left-color: #94a3b8; background: #1e293b; }
+.mp-content-section .mp-callout-cite .mp-callout-title { color: #94a3b8; }
