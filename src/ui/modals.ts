@@ -2,6 +2,8 @@ import { App, MarkdownView, Modal, Notice, Setting, TFile } from 'obsidian';
 import MPPlugin from '../main';
 import { markdownToHtml } from '../converter';
 import { WechatPublisher } from '../publisher/wechat';
+import { WechatAccountConfig } from '../settings/settings';
+import { AccountEditModal } from '../settings/MPSettingTab';
 
 // 封面图选择模态框
 export class CoverImageModal extends Modal {
@@ -355,8 +357,10 @@ export class PublishModal extends Modal {
 	markdownView: MarkdownView;
 	titleInput: HTMLInputElement;
 	platformSelect: HTMLSelectElement;
+	accountSelect: HTMLSelectElement;
 	coverImagePreview: HTMLElement;
 	selectedCoverMediaId: string = '';
+	selectedAccountId: string = '';
 
 	constructor(app: App, plugin: MPPlugin, markdownView: MarkdownView) {
 		super(app);
@@ -368,7 +372,6 @@ export class PublishModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		// 添加相同的处理
 		const modalEl = (this.containerEl.querySelector('.modal') as HTMLElement);
 		if (modalEl) {
 			modalEl.classList.add('mod-publish');
@@ -401,9 +404,44 @@ export class PublishModal extends Modal {
 		wechatOption.text = '微信公众号';
 		this.platformSelect.appendChild(wechatOption);
 
-		// 未来可以添加更多平台选项
-
 		platformSetting.controlEl.appendChild(this.platformSelect);
+
+		// ---- 公众号账号选择 ----
+		const accountSetting = new Setting(contentEl)
+			.setName('公众号')
+			.setDesc('选择要发布到的公众号');
+
+		const accountControlContainer = document.createElement('div');
+		accountControlContainer.style.display = 'flex';
+		accountControlContainer.style.alignItems = 'center';
+		accountControlContainer.style.gap = '8px';
+
+		this.accountSelect = document.createElement('select');
+		this.accountSelect.className = 'enhanced-publisher-platform-selector';
+		this.refreshAccountOptions();
+
+		this.accountSelect.addEventListener('change', () => {
+			this.selectedAccountId = this.accountSelect.value;
+		});
+
+		accountControlContainer.appendChild(this.accountSelect);
+
+		// 快捷新增账号按钮
+		const addAccountBtn = document.createElement('button');
+		addAccountBtn.textContent = '+ 新增';
+		addAccountBtn.className = 'mod-cta';
+		addAccountBtn.style.whiteSpace = 'nowrap';
+		addAccountBtn.addEventListener('click', () => {
+			const modal = new AccountEditModal(this.app, null, async (newAccount) => {
+				await this.plugin.settingsManager.addAccount(newAccount);
+				new Notice(`公众号「${newAccount.name}」已添加`);
+				this.refreshAccountOptions();
+			});
+			modal.open();
+		});
+		accountControlContainer.appendChild(addAccountBtn);
+
+		accountSetting.controlEl.appendChild(accountControlContainer);
 
 		// 添加草稿复选框
 		const draftSetting = new Setting(contentEl)
@@ -416,35 +454,29 @@ export class PublishModal extends Modal {
 		draftCheckbox.disabled = true;
 		draftSetting.controlEl.appendChild(draftCheckbox);
 
-		// 封面图选择（仅对微信公众号显示）
+		// 封面图选择
 		const coverImageSetting = new Setting(contentEl)
 			.setName('封面图')
 			.setDesc('选择文章封面图');
 
-		// 创建封面图选择区域的容器
 		const coverImageContainer = document.createElement('div');
 		coverImageContainer.className = 'cover-container';
 
-		// 封面图预览区域
 		this.coverImagePreview = document.createElement('div');
 		this.coverImagePreview.className = 'cover-preview';
 		this.coverImagePreview.textContent = '无封面图';
 
-		// 选择按钮
 		const selectCoverButton = document.createElement('button');
 		selectCoverButton.className = 'mod-cta';
 		selectCoverButton.textContent = '选择封面图';
 		selectCoverButton.addEventListener('click', () => {
-			// 打开封面图选择模态框
 			const coverImageModal = new CoverImageModal(this.app, this.plugin, (mediaId) => {
 				this.selectedCoverMediaId = mediaId;
 
-				// 更新预览区域
 				this.coverImagePreview.empty();
 				const img = document.createElement('img') as HTMLImageElement;
 				img.className = 'preview-image';
 
-				// 从sessionStorage获取选中的素材信息
 				const selectedMaterial = sessionStorage.getItem('selected_material');
 				if (selectedMaterial) {
 					const material = JSON.parse(selectedMaterial);
@@ -466,15 +498,14 @@ export class PublishModal extends Modal {
 
 		coverImageSetting.controlEl.appendChild(coverImageContainer);
 
-		// 创建发布按钮容器并居中
+		// 发布按钮
 		const publishButtonContainer = contentEl.createDiv({
 			cls: 'publish-button-container'
 		});
 
-		// 发布按钮
 		const publishButton = publishButtonContainer.createEl('button', {
 			text: '发布',
-			cls: 'enhanced-publisher-publish-button'
+			cls: 'mod-cta'
 		});
 
 		publishButton.addEventListener('click', async () => {
@@ -496,7 +527,6 @@ export class PublishModal extends Modal {
 				return;
 			}
 
-			// 使用 markdownToHtml 渲染内容（通过 juice 内联 CSS，确保样式在公众号后台正确显示）
 			const content = this.markdownView.getViewData();
 			const htmlContent = await markdownToHtml(
 				this.app,
@@ -506,36 +536,46 @@ export class PublishModal extends Modal {
 			);
 
 			if (platform === 'wechat') {
-				if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
-					new Notice('请先在设置中配置微信公众号的AppID和AppSecret');
+				// 获取选中的账号配置
+				const accountId = this.selectedAccountId;
+				const account = this.plugin.settingsManager.getAccountById(accountId);
+
+				if (!account) {
+					new Notice('请先选择或添加一个公众号配置');
 					return;
 				}
 
-				// 检查是否选择了封面图
+				if (!account.appId || !account.appSecret) {
+					new Notice(`公众号「${account.name}」的 AppID 或 AppSecret 未配置`);
+					return;
+				}
+
 				if (!this.selectedCoverMediaId) {
 					new Notice('请先选择封面图');
 					return;
 				}
 
 				try {
-					// 获取选中的封面图 media_id
 					const selectedMaterial = sessionStorage.getItem('selected_material');
 					if (selectedMaterial) {
 						const material = JSON.parse(selectedMaterial);
 						this.selectedCoverMediaId = material.media_id;
 					}
 
-					// 再次检查 media_id 是否有效
 					if (!this.selectedCoverMediaId) {
 						new Notice('封面图 media_id 无效，请重新选择封面图');
 						return;
 					}
 
+					publishButton.disabled = true;
+					publishButton.textContent = '发布中...';
+
 					const success = await this.plugin.publishToWechat(
 						title,
 						htmlContent,
 						this.selectedCoverMediaId,
-						this.markdownView.file
+						this.markdownView.file,
+						account
 					);
 
 					if (success) {
@@ -544,7 +584,7 @@ export class PublishModal extends Modal {
 						publishButton.disabled = false;
 						publishButton.textContent = '发布';
 					}
-				} catch (error) {
+				} catch (error: any) {
 					console.error('发布失败:', error);
 					new Notice('发布失败：' + (error.message || '未知错误'));
 					publishButton.disabled = false;
@@ -552,6 +592,37 @@ export class PublishModal extends Modal {
 				}
 			}
 		});
+	}
+
+	/** 刷新公众号下拉列表 */
+	private refreshAccountOptions() {
+		this.accountSelect.empty();
+
+		const accounts = this.plugin.settingsManager.getAccounts();
+		const defaultId = this.plugin.settingsManager.getSettings().defaultAccountId;
+
+		if (accounts.length === 0) {
+			const emptyOpt = document.createElement('option');
+			emptyOpt.value = '';
+			emptyOpt.text = '-- 请先添加公众号配置 --';
+			this.accountSelect.appendChild(emptyOpt);
+			this.selectedAccountId = '';
+			return;
+		}
+
+		for (const account of accounts) {
+			const opt = document.createElement('option');
+			opt.value = account.id;
+			opt.text = account.name + (account.id === defaultId ? ' (默认)' : '');
+			this.accountSelect.appendChild(opt);
+		}
+
+		// 默认选中
+		const targetId = defaultId && accounts.find(a => a.id === defaultId)
+			? defaultId
+			: accounts[0].id;
+		this.accountSelect.value = targetId;
+		this.selectedAccountId = targetId;
 	}
 
 	onClose() {

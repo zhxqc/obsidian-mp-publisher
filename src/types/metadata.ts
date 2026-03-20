@@ -9,6 +9,14 @@ export interface ImageMetadata {
     uploadTime: number;
 }
 
+// 发布记录
+export interface PublishRecord {
+    accountId: string;
+    accountName: string;
+    publishTime: number;
+    mediaId?: string;
+}
+
 // 草稿元数据接口
 export interface DraftMetadata {
     media_id: string;
@@ -19,12 +27,15 @@ export interface DraftMetadata {
     title: string;
     content: string;
     updateTime: number;
+    accountId?: string;
+    accountName?: string;
 }
 
 // 文档元数据接口
 export interface DocumentMetadata {
-    images: { [key: string]: ImageMetadata }; // key 是图片文件名
+    images: { [key: string]: ImageMetadata };
     draft?: DraftMetadata;
+    publishHistory?: PublishRecord[];
 }
 
 // 获取或创建文档的元数据文件
@@ -102,13 +113,28 @@ export function addImageMetadata(metadata: DocumentMetadata, fileName: string, i
     metadata.images[fileName] = imageData;
 }
 
-// 更新草稿元数据
-export function updateDraftMetadata(metadata: DocumentMetadata, draftData: any): void {
+// 更新草稿元数据，支持记录发布账号信息
+export function updateDraftMetadata(metadata: DocumentMetadata, draftData: any, account?: { id: string; name: string }): void {
     metadata.draft = {
         media_id: draftData.media_id,
         item: draftData.item,
         title: draftData.title,
         content: draftData.content,
-        updateTime: Date.now()
+        updateTime: Date.now(),
+        accountId: account?.id,
+        accountName: account?.name,
     };
+
+    // 追加发布历史记录
+    if (!metadata.publishHistory) {
+        metadata.publishHistory = [];
+    }
+    if (account) {
+        metadata.publishHistory.push({
+            accountId: account.id,
+            accountName: account.name,
+            publishTime: Date.now(),
+            mediaId: draftData.media_id,
+        });
+    }
 }

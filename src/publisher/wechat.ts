@@ -5,6 +5,7 @@ import { Logger } from '../utils/logger';
 import { cleanObsidianUIElements } from '../utils/html-cleaner';
 import { getPathFromPattern } from '../utils/path-utils';
 import { getProgressIndicator } from '../ui/ProgressIndicator';
+import { WechatAccountConfig } from '../settings/settings';
 
 // 微信素材类型接口
 interface WechatMaterial {
@@ -117,15 +118,18 @@ export class WechatPublisher {
         }
     }
 
-    // 获取访问令牌（带缓存）
-    async getAccessToken(forceRefresh: boolean = false): Promise<string> {
+    // 获取访问令牌（带缓存），支持指定账号配置
+    async getAccessToken(forceRefresh: boolean = false, account?: WechatAccountConfig): Promise<string> {
+        const appId = account?.appId || this.plugin.settings.wechatAppId;
+        const appSecret = account?.appSecret || this.plugin.settings.wechatAppSecret;
+        const cacheKey = account ? `wechat_token_cache_${account.id}` : 'wechat_token_cache';
+
         // 1. 检查缓存
         if (!forceRefresh) {
             try {
-                const cacheData = localStorage.getItem('wechat_token_cache');
+                const cacheData = localStorage.getItem(cacheKey);
                 const cache: TokenCache = cacheData ? JSON.parse(cacheData) : null;
 
-                // 如果缓存存在且未过期（有效期为110分钟，微信令牌有效期为2小时）
                 if (cache && Date.now() < cache.expireTime) {
                     this.logger.debug("使用缓存的访问令牌");
                     return cache.token;
@@ -137,7 +141,7 @@ export class WechatPublisher {
 
         // 2. 重新获取访问令牌 (带重试机制)
         const maxRetries = 3;
-        const initialDelay = 1000; // 1 second
+        const initialDelay = 1000;
 
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
@@ -149,14 +153,13 @@ export class WechatPublisher {
 
                 this.logger.debug(`开始获取微信访问令牌${forceRefresh ? ' (强制刷新)' : ''}`);
 
-                // 使用 stable_token 接口 (POST)
                 const tokenResponse = await requestUrl({
                     url: 'https://api.weixin.qq.com/cgi-bin/stable_token',
                     method: 'POST',
                     body: JSON.stringify({
                         grant_type: 'client_credential',
-                        appid: this.plugin.settings.wechatAppId,
-                        secret: this.plugin.settings.wechatAppSecret,
+                        appid: appId,
+                        secret: appSecret,
                         force_refresh: forceRefresh
                     }),
                     headers: {
@@ -169,9 +172,7 @@ export class WechatPublisher {
                     const errcode = tokenResponse.json.errcode;
                     const errmsg = tokenResponse.json.errmsg || '未知错误';
                     
-                    // 业务失败通常不需要重试，除非是特定错误
                     if (attempt === maxRetries) {
-                        // 针对 IP 白名单错误提供明确的提示
                         if (errcode === 40164 || errmsg?.includes('not in whitelist')) {
                             const ipMatch = errmsg?.match(/(\d+\.\d+\.\d+\.\d+)/);
                             const ip = ipMatch ? ipMatch[1] : '当前IP';
@@ -187,18 +188,17 @@ export class WechatPublisher {
                         }
                         return '';
                     }
-                    continue; // 尝试重试
+                    continue;
                 }
 
                 const accessToken = tokenResponse.json.access_token;
 
-                // 更新缓存（110分钟 = 6600000毫秒）
                 const expireTime = Date.now() + 6600000;
                 const newCache: TokenCache = {
                     token: accessToken,
                     expireTime: expireTime
                 };
-                localStorage.setItem('wechat_token_cache', JSON.stringify(newCache));
+                localStorage.setItem(cacheKey, JSON.stringify(newCache));
 
                 return accessToken;
             } catch (error: any) {
@@ -213,7 +213,6 @@ export class WechatPublisher {
                     }
                     return '';
                 }
-                // 继续下一次重试
             }
         }
         return '';
@@ -471,12 +470,13 @@ export class WechatPublisher {
         }
     }
 
-    // 发布到微信公众号
+    // 发布到微信公众号，支持指定账号配置
     async publishToWechat(
         title: string,
         content: string,
         thumb_media_id: string,
-        file: TFile
+        file: TFile,
+        account?: WechatAccountConfig
     ): Promise<boolean> {
         try {
             // 获取进度指示器
@@ -524,10 +524,11 @@ export class WechatPublisher {
                 item: metadata.draft?.item,
             };
 
+            const authorName = account?.author || '';
+
             // 使用带重试机制的请求
             let response = await this.requestWithTokenRetry(async (token) => {
                 if (metadata.draft?.media_id) {
-                    // 更新现有草稿
                     return requestUrl({
                         url: `https://api.weixin.qq.com/cgi-bin/draft/update?access_token=${token}`,
                         method: 'POST',
@@ -538,7 +539,7 @@ export class WechatPublisher {
                                 title,
                                 content: processedContent,
                                 thumb_media_id,
-                                author: '',
+                                author: authorName,
                                 digest: '',
                                 show_cover_pic: thumb_media_id ? 1 : 0,
                                 content_source_url: '',
@@ -548,7 +549,6 @@ export class WechatPublisher {
                         })
                     });
                 } else {
-                    // 创建新草稿
                     return requestUrl({
                         url: `https://api.weixin.qq.com/cgi-bin/draft/add?access_token=${token}`,
                         method: 'POST',
@@ -557,7 +557,7 @@ export class WechatPublisher {
                                 title,
                                 content: processedContent,
                                 thumb_media_id,
-                                author: '',
+                                author: authorName,
                                 digest: '',
                                 show_cover_pic: thumb_media_id ? 1 : 0,
                                 content_source_url: '',
@@ -567,7 +567,7 @@ export class WechatPublisher {
                         })
                     });
                 }
-            });
+            }, account);
 
             this.logger.debug(`response: ${JSON.stringify(response)}`);
 
@@ -585,7 +585,7 @@ export class WechatPublisher {
                                 title,
                                 content: processedContent,
                                 thumb_media_id,
-                                author: '',
+                                author: authorName,
                                 digest: '',
                                 show_cover_pic: thumb_media_id ? 1 : 0,
                                 content_source_url: '',
@@ -594,18 +594,16 @@ export class WechatPublisher {
                             }]
                         })
                     });
-                });
+                }, account);
                 this.logger.debug(`retry response: ${JSON.stringify(response)}`);
             }
 
             if (response.status === 200) {
-                // 检查业务错误码
                 if (response.json.errcode && response.json.errcode !== 0) {
                     this.handleWechatError(response.json);
                     return false;
                 }
 
-                // 成功，更新元数据
                 if (response.json.media_id) {
                     updateData.media_id = response.json.media_id;
                 }
@@ -613,12 +611,15 @@ export class WechatPublisher {
                     updateData.item = response.json.item;
                 }
 
-                updateDraftMetadata(metadata, updateData);
+                updateDraftMetadata(metadata, updateData, account);
                 await updateMetadata(this.app.vault, file, metadata, assetFolderPath);
 
-                // 显示成功状态
+                // 更新 frontmatter 已发布标记
+                const accountName = account?.name || '默认公众号';
+                await this.markPublishedInFrontmatter(file, accountName);
+
                 progress.showSuccess('发布成功！');
-                new Notice('成功发布到微信公众号草稿箱');
+                new Notice(`成功发布到「${accountName}」草稿箱`);
                 return true;
             } else {
                 throw new Error(`发布失败: HTTP ${response.status}`);
@@ -631,8 +632,73 @@ export class WechatPublisher {
         }
     }
 
-    // 辅助方法：执行带重试的请求
-    private async requestWithTokenRetry(requestFn: (token: string) => Promise<any>): Promise<any> {
+    // 在 frontmatter 中标记已发布状态
+    private async markPublishedInFrontmatter(file: TFile, accountName: string): Promise<void> {
+        try {
+            const content = await this.app.vault.read(file);
+            const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+            const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+            const match = content.match(frontmatterRegex);
+
+            if (match) {
+                let fm = match[1];
+
+                // 更新 published 字段
+                if (/^published\s*:/m.test(fm)) {
+                    fm = fm.replace(/^published\s*:.*/m, 'published: true');
+                } else {
+                    fm += '\npublished: true';
+                }
+
+                // 更新 published_accounts 字段（YAML 数组追加）
+                const accountEntry = `${accountName}(${now})`;
+                const accountsMatch = fm.match(/^published_accounts\s*:\s*\n((?:\s+-\s+.*\n?)*)/m);
+                if (accountsMatch) {
+                    const existingBlock = accountsMatch[0];
+                    // 检查该账号是否已存在（按名称前缀匹配），存在则更新时间
+                    const lines = existingBlock.split('\n');
+                    let found = false;
+                    const updatedLines = lines.map(line => {
+                        if (line.trim().startsWith(`- ${accountName}(`)) {
+                            found = true;
+                            return `  - ${accountEntry}`;
+                        }
+                        return line;
+                    });
+                    if (!found) {
+                        updatedLines.splice(updatedLines.length - 1, 0, `  - ${accountEntry}`);
+                    }
+                    fm = fm.replace(existingBlock, updatedLines.join('\n'));
+                } else if (/^published_accounts\s*:/m.test(fm)) {
+                    fm = fm.replace(/^published_accounts\s*:.*/m, `published_accounts:\n  - ${accountEntry}`);
+                } else {
+                    fm += `\npublished_accounts:\n  - ${accountEntry}`;
+                }
+
+                // 更新 last_published 字段
+                if (/^last_published\s*:/m.test(fm)) {
+                    fm = fm.replace(/^last_published\s*:.*/m, `last_published: "${now}"`);
+                } else {
+                    fm += `\nlast_published: "${now}"`;
+                }
+
+                const newContent = content.replace(frontmatterRegex, `---\n${fm}\n---`);
+                await this.app.vault.modify(file, newContent);
+            } else {
+                // 没有 frontmatter，创建新的
+                const newFm = `---\npublished: true\npublished_accounts:\n  - ${accountName}(${now})\nlast_published: "${now}"\n---\n`;
+                await this.app.vault.modify(file, newFm + content);
+            }
+
+            this.logger.debug(`已在 frontmatter 中标记发布状态: ${accountName}`);
+        } catch (error) {
+            this.logger.error('更新 frontmatter 发布标记失败:', error);
+        }
+    }
+
+    // 辅助方法：执行带重试的请求，支持指定账号配置
+    private async requestWithTokenRetry(requestFn: (token: string) => Promise<any>, account?: WechatAccountConfig): Promise<any> {
         const maxRetries = 2;
         const initialDelay = 1000;
 
@@ -644,7 +710,7 @@ export class WechatPublisher {
                     await new Promise(resolve => setTimeout(resolve, delay));
                 }
 
-                const accessToken = await this.getAccessToken();
+                const accessToken = await this.getAccessToken(false, account);
                 if (!accessToken) throw new Error("无法获取 Access Token，请检查：1. AppID 和 AppSecret 是否正确；2. 当前 IP 是否已添加到微信公众平台白名单（设置与开发 → 基本配置 → IP 白名单）");
 
                 let response = await requestFn(accessToken);
@@ -652,7 +718,7 @@ export class WechatPublisher {
                 // 处理 Token 失效
                 if (response.json && [40001, 40014, 42001].includes(response.json.errcode)) {
                     this.logger.warn(`Token失效 (${response.json.errcode})，尝试刷新并重试...`);
-                    const newToken = await this.getAccessToken(true);
+                    const newToken = await this.getAccessToken(true, account);
                     if (newToken) {
                         response = await requestFn(newToken);
                     }
@@ -665,7 +731,7 @@ export class WechatPublisher {
 
                 if (isNetworkError && attempt < maxRetries) {
                     this.logger.error(`微信接口网络错误 (尝试 ${attempt + 1}/${maxRetries + 1}):`, error);
-                    continue; // 重试
+                    continue;
                 }
 
                 this.logger.error(`微信接口请求失败:`, error);

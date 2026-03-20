@@ -1224,20 +1224,37 @@ ol {
   opacity: 0.6;
   cursor: not-allowed;
 }
-.enhanced-publisher-publish-button {
-  background-color: #07c160;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  margin-top: 10px;
-}
+/* .enhanced-publisher-publish-button 已弃用，发布按钮使用 Obsidian 原生 mod-cta */
 .publish-button-container {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+}
+.publish-button-container .mod-cta {
+  padding: 12px 80px;
+  font-size: 15px;
+}
+.mod-publish .setting-item .enhanced-publisher-platform-selector {
+  min-width: 200px;
+}
+/* 公众号配置编辑弹窗 */
+.mp-account-edit-modal .setting-item .setting-item-control input[type="text"] {
+  width: 300px;
+}
+.mp-account-edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.mp-account-edit-buttons button {
+  padding: 8px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 .cover-preview {
   width: 100%;

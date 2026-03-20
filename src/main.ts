@@ -2,7 +2,7 @@ import { Plugin, Notice, TFile, MarkdownView } from 'obsidian';
 import { MPView, VIEW_TYPE_MP } from './view';
 import { ThemeManager } from './themeManager';
 import { ThemeManagerView, VIEW_TYPE_THEME_MANAGER } from './themeManagerView';
-import { SettingsManager } from './settings/settings';
+import { SettingsManager, WechatAccountConfig } from './settings/settings';
 import { MPConverter } from './converter';
 import { DonateManager } from './donateManager';
 import { MPSettingTab } from './settings/MPSettingTab';
@@ -139,9 +139,9 @@ export default class MPPublisherPlugin extends Plugin {
     }
   }
 
-  // 包装微信发布功能供UI调用
-  async publishToWechat(title: string, content: string, thumbMediaId: string = '', file: TFile): Promise<boolean> {
-    return this.wechatPublisher.publishToWechat(title, content, thumbMediaId, file);
+  // 包装微信发布功能供UI调用，支持指定账号
+  async publishToWechat(title: string, content: string, thumbMediaId: string = '', file: TFile, account?: WechatAccountConfig): Promise<boolean> {
+    return this.wechatPublisher.publishToWechat(title, content, thumbMediaId, file, account);
   }
 
   onunload() {

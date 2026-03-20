@@ -1,4 +1,14 @@
 import { CSSTheme, FontOption, DEFAULT_FONTS, RemoteThemeIndex } from '../types/css-theme';
+import { nanoid } from '../utils/nanoid';
+
+// 单个公众号账号配置
+export interface WechatAccountConfig {
+    id: string;
+    name: string;       // 公众号名称
+    author: string;     // 作者名称
+    appId: string;
+    appSecret: string;
+}
 
 export interface MPSettings {
     // 主题设置
@@ -9,7 +19,10 @@ export interface MPSettings {
     downloadedRemoteThemes: CSSTheme[];
     remoteThemeIndexCache?: RemoteThemeIndex[];
     remoteIndexLastUpdate?: number;
-    // 微信公众号相关设置
+    // 微信公众号相关设置（多账号）
+    wechatAccounts: WechatAccountConfig[];
+    defaultAccountId: string;  // 默认选中的账号 ID
+    // 兼容旧版单账号配置
     wechatAppId: string;
     wechatAppSecret: string;
     imageAttachmentLocation: string;
@@ -24,6 +37,8 @@ const DEFAULT_SETTINGS: MPSettings = {
     customFonts: [...DEFAULT_FONTS],
     downloadedRemoteThemes: [],
     // 微信公众号默认设置
+    wechatAccounts: [],
+    defaultAccountId: '',
     wechatAppId: '',
     wechatAppSecret: '',
     imageAttachmentLocation: '${filename}__assets',
@@ -57,7 +72,35 @@ export class SettingsManager {
             savedData.downloadedRemoteThemes = [];
         }
 
+        // 确保 wechatAccounts 存在
+        if (!savedData.wechatAccounts) {
+            savedData.wechatAccounts = [];
+        }
+
         this.settings = { ...DEFAULT_SETTINGS, ...savedData };
+
+        // 迁移旧版单账号到多账号配置
+        await this.migrateOldAccountConfig();
+    }
+
+    /** 将旧版 wechatAppId/wechatAppSecret 迁移到 wechatAccounts 数组 */
+    private async migrateOldAccountConfig(): Promise<void> {
+        if (
+            this.settings.wechatAppId &&
+            this.settings.wechatAppSecret &&
+            this.settings.wechatAccounts.length === 0
+        ) {
+            const migratedAccount: WechatAccountConfig = {
+                id: nanoid(),
+                name: '默认公众号',
+                author: '',
+                appId: this.settings.wechatAppId,
+                appSecret: this.settings.wechatAppSecret,
+            };
+            this.settings.wechatAccounts = [migratedAccount];
+            this.settings.defaultAccountId = migratedAccount.id;
+            await this.saveSettings();
+        }
     }
 
     async saveSettings(): Promise<void> {
@@ -75,5 +118,58 @@ export class SettingsManager {
 
     getFontOptions(): FontOption[] {
         return this.settings.customFonts;
+    }
+
+    // ---- 多账号管理 ----
+
+    getAccounts(): WechatAccountConfig[] {
+        return this.settings.wechatAccounts;
+    }
+
+    getAccountById(id: string): WechatAccountConfig | undefined {
+        return this.settings.wechatAccounts.find(a => a.id === id);
+    }
+
+    getDefaultAccount(): WechatAccountConfig | undefined {
+        if (this.settings.defaultAccountId) {
+            return this.getAccountById(this.settings.defaultAccountId);
+        }
+        return this.settings.wechatAccounts[0];
+    }
+
+    async addAccount(account: Omit<WechatAccountConfig, 'id'>): Promise<WechatAccountConfig> {
+        const newAccount: WechatAccountConfig = {
+            id: nanoid(),
+            ...account,
+        };
+        this.settings.wechatAccounts.push(newAccount);
+        if (this.settings.wechatAccounts.length === 1) {
+            this.settings.defaultAccountId = newAccount.id;
+        }
+        await this.saveSettings();
+        return newAccount;
+    }
+
+    async updateAccount(id: string, updates: Partial<Omit<WechatAccountConfig, 'id'>>): Promise<void> {
+        const account = this.settings.wechatAccounts.find(a => a.id === id);
+        if (account) {
+            Object.assign(account, updates);
+            await this.saveSettings();
+        }
+    }
+
+    async removeAccount(id: string): Promise<void> {
+        this.settings.wechatAccounts = this.settings.wechatAccounts.filter(a => a.id !== id);
+        if (this.settings.defaultAccountId === id) {
+            this.settings.defaultAccountId = this.settings.wechatAccounts[0]?.id || '';
+        }
+        await this.saveSettings();
+    }
+
+    async setDefaultAccount(id: string): Promise<void> {
+        if (this.getAccountById(id)) {
+            this.settings.defaultAccountId = id;
+            await this.saveSettings();
+        }
     }
 }
