@@ -4,6 +4,7 @@ import { markdownToHtml } from '../converter';
 import { WechatPublisher } from '../publisher/wechat';
 import { WechatAccountConfig } from '../settings/settings';
 import { AccountEditModal } from '../settings/MPSettingTab';
+import { ImageCropperModal } from './ImageCropperModal';
 
 // 封面图选择模态框
 export class CoverImageModal extends Modal {
@@ -280,52 +281,59 @@ export class CoverImageModal extends Modal {
 			this.close();
 		});
 
-		// 本地图片确认按钮事件
+		// 本地图片确认按钮事件：打开裁剪弹窗
 		localConfirmButton.addEventListener('click', async () => {
 			const selectedFileInfo = sessionStorage.getItem('selected_file');
 			const previewImageUrl = sessionStorage.getItem('preview_image_url');
 
-			if (!selectedFileInfo || !previewImageUrl || !selectedFileData) {
+			if (!selectedFileInfo || !previewImageUrl) {
 				new Notice('请先选择图片');
 				return;
 			}
 
 			const fileInfo = JSON.parse(selectedFileInfo);
 
-			// 立即上传图片到微信获取 media_id
-			localConfirmButton.disabled = true;
-			localConfirmButton.textContent = '正在上传...';
+			// 打开裁剪弹窗
+			const cropperModal = new ImageCropperModal(
+				this.app,
+				previewImageUrl,
+				async (croppedData: ArrayBuffer, croppedPreviewUrl: string) => {
+					// 裁剪完成后上传
+					localConfirmButton.disabled = true;
+					localConfirmButton.textContent = '正在上传...';
 
-			try {
-				const mediaId = await this.plugin.wechatPublisher.uploadImageToWechat(
-					selectedFileData,
-					fileInfo.name
-				);
+					try {
+						const mediaId = await this.plugin.wechatPublisher.uploadImageToWechat(
+							croppedData,
+							fileInfo.name,
+						);
 
-				if (!mediaId) {
-					new Notice('上传封面图失败，请重试');
-					localConfirmButton.disabled = false;
-					localConfirmButton.textContent = '确认';
-					return;
-				}
+						if (!mediaId) {
+							new Notice('上传封面图失败，请重试');
+							localConfirmButton.disabled = false;
+							localConfirmButton.textContent = '确认';
+							return;
+						}
 
-				// 保存上传成功的图片信息
-				sessionStorage.setItem('selected_material', JSON.stringify({
-					media_id: mediaId,
-					url: previewImageUrl,
-					name: fileInfo.name,
-					isLocal: false  // 已经上传到微信，不再是本地图片
-				}));
+						sessionStorage.setItem('selected_material', JSON.stringify({
+							media_id: mediaId,
+							url: croppedPreviewUrl,
+							name: fileInfo.name,
+							isLocal: false,
+						}));
 
-				this.onImageSelected(mediaId);
-				new Notice('封面图上传成功');
-				this.close();
-			} catch (error) {
-				console.error('上传封面图失败:', error);
-				new Notice('上传封面图失败：' + (error.message || '未知错误'));
-				localConfirmButton.disabled = false;
-				localConfirmButton.textContent = '确认';
-			}
+						this.onImageSelected(mediaId);
+						new Notice('封面图上传成功');
+						this.close();
+					} catch (error: any) {
+						console.error('上传封面图失败:', error);
+						new Notice('上传封面图失败：' + (error.message || '未知错误'));
+						localConfirmButton.disabled = false;
+						localConfirmButton.textContent = '确认';
+					}
+				},
+			);
+			cropperModal.open();
 		});
 
 		// 分页按钮事件

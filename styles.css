@@ -2056,3 +2056,46 @@ ol {
         max-width: none;
     }
 }
+
+/* 图片裁剪弹窗 */
+.modal.mod-cropper {
+    width: 660px;
+    max-width: 90vw;
+}
+
+.mp-cropper-modal h2 {
+    margin: 0 0 4px;
+}
+
+.mp-cropper-hint {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.mp-cropper-canvas-container {
+    display: flex;
+    justify-content: center;
+    background: var(--background-secondary);
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.mp-cropper-canvas {
+    border-radius: 4px;
+    background: #000;
+}
+
+.mp-cropper-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.mp-cropper-buttons button {
+    padding: 8px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
