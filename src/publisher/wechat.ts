@@ -15,12 +15,6 @@ interface WechatMaterial {
     update_time: string;
 }
 
-// 封面图缓存接口
-interface CoverImageCache {
-    materials: WechatMaterial[];
-    lastUpdate: number;
-}
-
 // 访问令牌缓存接口
 interface TokenCache {
     token: string;
@@ -68,15 +62,6 @@ export class WechatPublisher {
             const items = materialsResponse.json.item || [];
             const totalCount = materialsResponse.json.total_count || 0;
 
-            // 更新缓存
-            const cacheKey = `wechat_material_cache_page_${page}`;
-            const cacheData = {
-                items: items,
-                totalCount: totalCount,
-                lastUpdate: Date.now()
-            };
-            localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-
             return { items, totalCount };
         } catch (error) {
             this.logger.error('获取微信素材库时出错:', error);
@@ -86,9 +71,9 @@ export class WechatPublisher {
     }
 
     // 上传图片到微信公众号（使用uploadimg接口）
-    async uploadImageToWechat(imageData: ArrayBuffer, fileName: string): Promise<string> {
+    async uploadImageToWechat(imageData: ArrayBuffer, fileName: string, account?: WechatAccountConfig): Promise<string> {
         try {
-            const result = await this.uploadImageAndGetUrl(imageData, fileName);
+            const result = await this.uploadImageAndGetUrl(imageData, fileName, account);
 
             if (!result) return '';
 
@@ -221,7 +206,8 @@ export class WechatPublisher {
     // 上传单个图片到微信公众号并获取URL
     async uploadImageAndGetUrl(
         imageData: ArrayBuffer,
-        fileName: string
+        fileName: string,
+        account?: WechatAccountConfig
     ): Promise<{ url: string; media_id: string } | null> {
         try {
             const boundary = '----WebKitFormBoundary' + Math.random().toString(16).substring(2);
@@ -249,7 +235,7 @@ export class WechatPublisher {
                     },
                     body: combinedBuffer.buffer
                 });
-            });
+            }, account);
 
             this.logger.debug(`response: ${JSON.stringify(response)}`);
 
@@ -516,11 +502,33 @@ export class WechatPublisher {
             // 获取元数据
             const metadata = await getOrCreateMetadata(this.app.vault, file, assetFolderPath);
 
+            // 查找当前账号对应的 draft_media_id
+            const accountId = account?.id || 'default';
+            let currentDraftMediaId = '';
+
+            // 优先从 metadata 中获取（按账号匹配）
+            if (metadata.draft?.media_id && metadata.draft?.accountId === accountId) {
+                currentDraftMediaId = metadata.draft.media_id;
+            }
+
+            // 如果 metadata 中没有，尝试从 frontmatter 获取
+            if (!currentDraftMediaId) {
+                const fileContent = await this.app.vault.read(file);
+                const fmMatch = fileContent.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+                if (fmMatch) {
+                    const draftKey = `draft_media_id_${accountId}`;
+                    const draftIdMatch = fmMatch[1].match(new RegExp(`^${draftKey}\\s*:\\s*"?([^"\\n]+)"?`, 'm'));
+                    if (draftIdMatch) {
+                        currentDraftMediaId = draftIdMatch[1];
+                    }
+                }
+            }
+
             // 准备更新数据
             let updateData = {
                 title,
                 content: processedContent,
-                media_id: metadata.draft?.media_id,
+                media_id: currentDraftMediaId || undefined,
                 item: metadata.draft?.item,
             };
 
@@ -528,12 +536,12 @@ export class WechatPublisher {
 
             // 使用带重试机制的请求
             let response = await this.requestWithTokenRetry(async (token) => {
-                if (metadata.draft?.media_id) {
+                if (currentDraftMediaId) {
                     return requestUrl({
                         url: `https://api.weixin.qq.com/cgi-bin/draft/update?access_token=${token}`,
                         method: 'POST',
                         body: JSON.stringify({
-                            media_id: metadata.draft.media_id,
+                            media_id: currentDraftMediaId,
                             index: 0,
                             articles: {
                                 title,
@@ -572,9 +580,9 @@ export class WechatPublisher {
             this.logger.debug(`response: ${JSON.stringify(response)}`);
 
             // 如果是 40007 错误且我们之前尝试更新现有草稿，可能是草稿 ID 已失效，清除它并重试一次创建新草稿
-            if (response.json && response.json.errcode === 40007 && metadata.draft?.media_id) {
+            if (response.json && response.json.errcode === 40007 && currentDraftMediaId) {
                 this.logger.warn('草稿 media_id 已失效，尝试重新创建新草稿');
-                metadata.draft.media_id = ''; // 清除失效的 ID
+                currentDraftMediaId = ''; // 清除失效的 ID
                 
                 response = await this.requestWithTokenRetry(async (token) => {
                     return requestUrl({
@@ -601,6 +609,7 @@ export class WechatPublisher {
             if (response.status === 200) {
                 if (response.json.errcode && response.json.errcode !== 0) {
                     this.handleWechatError(response.json);
+                    progress.showError('发布失败');
                     return false;
                 }
 
@@ -614,9 +623,12 @@ export class WechatPublisher {
                 updateDraftMetadata(metadata, updateData, account);
                 await updateMetadata(this.app.vault, file, metadata, assetFolderPath);
 
-                // 更新 frontmatter 已发布标记
+                // 更新 frontmatter 已发布标记（包含 draft_media_id，按账号区分）
                 const accountName = account?.name || '默认公众号';
-                await this.markPublishedInFrontmatter(file, accountName);
+                await this.markPublishedInFrontmatter(file, accountName, updateData.media_id, accountId);
+
+                // 清理空的 assets 文件夹
+                await this.cleanupEmptyAssetFolder(assetFolderPath);
 
                 progress.showSuccess('发布成功！');
                 new Notice(`成功发布到「${accountName}」草稿箱`);
@@ -627,18 +639,20 @@ export class WechatPublisher {
         } catch (error: any) {
             this.logger.error('发布到微信时出错:', error);
             const errorMessage = error instanceof Error ? error.message : String(error);
+            const progress = getProgressIndicator(this.app);
+            progress.showError('发布失败');
             new Notice(`发布到微信时出错: ${errorMessage}`);
             return false;
         }
     }
 
     // 在 frontmatter 中标记已发布状态
-    private async markPublishedInFrontmatter(file: TFile, accountName: string): Promise<void> {
+    private async markPublishedInFrontmatter(file: TFile, accountName: string, draftMediaId?: string, accountId?: string): Promise<void> {
         try {
             const content = await this.app.vault.read(file);
             const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-            const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+            const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---/;
             const match = content.match(frontmatterRegex);
 
             if (match) {
@@ -656,7 +670,6 @@ export class WechatPublisher {
                 const accountsMatch = fm.match(/^published_accounts\s*:\s*\n((?:\s+-\s+.*\n?)*)/m);
                 if (accountsMatch) {
                     const existingBlock = accountsMatch[0];
-                    // 检查该账号是否已存在（按名称前缀匹配），存在则更新时间
                     const lines = existingBlock.split('\n');
                     let found = false;
                     const updatedLines = lines.map(line => {
@@ -683,17 +696,61 @@ export class WechatPublisher {
                     fm += `\nlast_published: "${now}"`;
                 }
 
+                // 更新 draft_media_id 字段（按账号存储，用于下次更新草稿）
+                if (draftMediaId && accountId) {
+                    const draftKey = `draft_media_id_${accountId}`;
+                    const draftKeyRegex = new RegExp(`^${draftKey}\\s*:.*`, 'm');
+                    if (draftKeyRegex.test(fm)) {
+                        fm = fm.replace(draftKeyRegex, `${draftKey}: "${draftMediaId}"`);
+                    } else {
+                        fm += `\n${draftKey}: "${draftMediaId}"`;
+                    }
+                }
+
                 const newContent = content.replace(frontmatterRegex, `---\n${fm}\n---`);
                 await this.app.vault.modify(file, newContent);
             } else {
                 // 没有 frontmatter，创建新的
-                const newFm = `---\npublished: true\npublished_accounts:\n  - ${accountName}(${now})\nlast_published: "${now}"\n---\n`;
+                let newFm = `---\npublished: true\npublished_accounts:\n  - ${accountName}(${now})\nlast_published: "${now}"`;
+                if (draftMediaId && accountId) {
+                    newFm += `\ndraft_media_id_${accountId}: "${draftMediaId}"`;
+                }
+                newFm += `\n---\n`;
                 await this.app.vault.modify(file, newFm + content);
             }
 
             this.logger.debug(`已在 frontmatter 中标记发布状态: ${accountName}`);
         } catch (error) {
             this.logger.error('更新 frontmatter 发布标记失败:', error);
+        }
+    }
+
+    /** 清理空的 assets 文件夹（只有 metadata.json 时删除） */
+    private async cleanupEmptyAssetFolder(assetFolderPath: string): Promise<void> {
+        try {
+            const folder = this.app.vault.getAbstractFileByPath(assetFolderPath);
+            if (!folder) return;
+
+            const files = await this.app.vault.adapter.list(assetFolderPath);
+            const allFiles = [...files.files, ...files.folders];
+
+            // 如果文件夹只有 metadata.json（或为空），就删除
+            const nonMetadataFiles = allFiles.filter(f => !f.endsWith('metadata.json'));
+            if (nonMetadataFiles.length === 0) {
+                // 先删除 metadata.json
+                const metadataFile = this.app.vault.getAbstractFileByPath(`${assetFolderPath}/metadata.json`);
+                if (metadataFile instanceof TFile) {
+                    await this.app.vault.delete(metadataFile);
+                }
+                // 再删除文件夹
+                const folderFile = this.app.vault.getAbstractFileByPath(assetFolderPath);
+                if (folderFile) {
+                    await this.app.vault.delete(folderFile);
+                }
+                this.logger.debug(`已清理空的资源文件夹: ${assetFolderPath}`);
+            }
+        } catch (error) {
+            this.logger.debug('清理资源文件夹时出错（可忽略）:', error);
         }
     }
 

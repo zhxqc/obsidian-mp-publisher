@@ -2059,8 +2059,8 @@ ol {
 
 /* 图片裁剪弹窗 */
 .modal.mod-cropper {
-    width: 660px;
-    max-width: 90vw;
+    width: 960px;
+    max-width: 95vw;
 }
 
 .mp-cropper-modal h2 {
@@ -2076,14 +2076,19 @@ ol {
 .mp-cropper-canvas-container {
     display: flex;
     justify-content: center;
-    background: var(--background-secondary);
+    background: #1a1a1a;
     border-radius: 8px;
-    padding: 8px;
+    padding: 12px;
 }
 
 .mp-cropper-canvas {
     border-radius: 4px;
     background: #000;
+    max-width: 100%;
+    height: auto;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .mp-cropper-buttons {

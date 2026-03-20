@@ -32,6 +32,12 @@ export class ImageCropperModal extends Modal {
     // 缩放拖拽
     private isResizing = false;
     private resizeHandle: string = '';
+    private dragStartCropW = 0;
+    private dragStartCropH = 0;
+
+    // 渲染节流
+    private rafId: number | null = null;
+    private needsRedraw = false;
 
     constructor(
         app: App,
@@ -92,8 +98,8 @@ export class ImageCropperModal extends Modal {
     }
 
     private setupCanvas(): void {
-        const maxW = 600;
-        const maxH = 450;
+        const maxW = 900;
+        const maxH = 640;
         const imgRatio = this.image.width / this.image.height;
 
         let displayW: number, displayH: number;
@@ -117,7 +123,6 @@ export class ImageCropperModal extends Modal {
     }
 
     private initCropBox(): void {
-        // 在图片区域内初始化最大的 2.35:1 裁剪框
         const imgRatio = this.imgDisplayW / this.imgDisplayH;
 
         if (imgRatio > COVER_ASPECT_RATIO) {
@@ -132,9 +137,22 @@ export class ImageCropperModal extends Modal {
         this.cropY = this.imgDisplayY + (this.imgDisplayH - this.cropH) / 2;
     }
 
+    private scheduleRedraw(): void {
+        if (!this.needsRedraw) {
+            this.needsRedraw = true;
+            this.rafId = requestAnimationFrame(() => {
+                this.needsRedraw = false;
+                this.draw();
+            });
+        }
+    }
+
     private draw(): void {
         const ctx = this.ctx;
-        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        ctx.clearRect(0, 0, w, h);
 
         // 绘制图片
         ctx.drawImage(
@@ -143,21 +161,16 @@ export class ImageCropperModal extends Modal {
             this.imgDisplayW, this.imgDisplayH,
         );
 
-        // 半透明遮罩
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // 裁剪区域清除遮罩，显示原图
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(this.cropX, this.cropY, this.cropW, this.cropH);
-        ctx.clip();
-        ctx.drawImage(
-            this.image,
-            this.imgDisplayX, this.imgDisplayY,
-            this.imgDisplayW, this.imgDisplayH,
-        );
-        ctx.restore();
+        // 半透明遮罩（用 4 个矩形避免重叠裁剪区域）
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        // 上
+        ctx.fillRect(0, 0, w, this.cropY);
+        // 下
+        ctx.fillRect(0, this.cropY + this.cropH, w, h - this.cropY - this.cropH);
+        // 左
+        ctx.fillRect(0, this.cropY, this.cropX, this.cropH);
+        // 右
+        ctx.fillRect(this.cropX + this.cropW, this.cropY, w - this.cropX - this.cropW, this.cropH);
 
         // 裁剪框边框
         ctx.strokeStyle = '#fff';
@@ -165,7 +178,7 @@ export class ImageCropperModal extends Modal {
         ctx.strokeRect(this.cropX, this.cropY, this.cropW, this.cropH);
 
         // 三等分线
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 1;
         for (let i = 1; i <= 2; i++) {
             const x = this.cropX + (this.cropW / 3) * i;
@@ -181,45 +194,70 @@ export class ImageCropperModal extends Modal {
             ctx.stroke();
         }
 
-        // 四角拖拽手柄
-        const handleSize = 8;
-        ctx.fillStyle = '#fff';
-        const corners = [
-            [this.cropX, this.cropY],
-            [this.cropX + this.cropW, this.cropY],
-            [this.cropX, this.cropY + this.cropH],
-            [this.cropX + this.cropW, this.cropY + this.cropH],
+        // 角落 L 形手柄
+        this.drawCornerHandles(ctx);
+    }
+
+    private drawCornerHandles(ctx: CanvasRenderingContext2D): void {
+        const len = 20;
+        const thickness = 3;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = thickness;
+        ctx.lineCap = 'square';
+
+        const corners: [number, number, number, number][] = [
+            // [x, y, xDir, yDir]
+            [this.cropX, this.cropY, 1, 1],           // nw
+            [this.cropX + this.cropW, this.cropY, -1, 1],  // ne
+            [this.cropX, this.cropY + this.cropH, 1, -1],  // sw
+            [this.cropX + this.cropW, this.cropY + this.cropH, -1, -1], // se
         ];
-        for (const [cx, cy] of corners) {
-            ctx.fillRect(cx - handleSize / 2, cy - handleSize / 2, handleSize, handleSize);
+
+        for (const [x, y, dx, dy] of corners) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + dy * len);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + dx * len, y);
+            ctx.stroke();
         }
     }
 
     private bindEvents(): void {
-        this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
-        this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
-        this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
-        this.canvas.addEventListener('mouseleave', this.onMouseUp.bind(this));
+        this.onMouseDown = this.onMouseDown.bind(this);
+        this.onMouseMove = this.onMouseMove.bind(this);
+        this.onMouseUp = this.onMouseUp.bind(this);
+
+        this.canvas.addEventListener('mousedown', this.onMouseDown);
+        this.canvas.addEventListener('mousemove', this.onMouseMove);
+        this.canvas.addEventListener('mouseup', this.onMouseUp);
+        this.canvas.addEventListener('mouseleave', this.onMouseUp);
+
+        // 触屏支持
+        this.canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
+        this.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
+        this.canvas.addEventListener('touchend', this.onTouchEnd.bind(this));
     }
 
-    private getCanvasPos(e: MouseEvent): { x: number; y: number } {
+    private getCanvasPos(e: MouseEvent | Touch): { x: number; y: number } {
         const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
         return {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY,
         };
     }
 
     private getResizeHandle(x: number, y: number): string {
-        const threshold = 12;
-        const corners: Record<string, [number, number]> = {
+        const threshold = 16;
+        const handles: Record<string, [number, number]> = {
             'nw': [this.cropX, this.cropY],
             'ne': [this.cropX + this.cropW, this.cropY],
             'sw': [this.cropX, this.cropY + this.cropH],
             'se': [this.cropX + this.cropW, this.cropY + this.cropH],
         };
 
-        for (const [handle, [cx, cy]] of Object.entries(corners)) {
+        for (const [handle, [cx, cy]] of Object.entries(handles)) {
             if (Math.abs(x - cx) < threshold && Math.abs(y - cy) < threshold) {
                 return handle;
             }
@@ -233,23 +271,37 @@ export class ImageCropperModal extends Modal {
     }
 
     private onMouseDown(e: MouseEvent): void {
+        e.preventDefault();
         const pos = this.getCanvasPos(e);
+        this.startInteraction(pos.x, pos.y);
+    }
 
-        const handle = this.getResizeHandle(pos.x, pos.y);
+    private onTouchStart(e: TouchEvent): void {
+        e.preventDefault();
+        if (e.touches.length === 1) {
+            const pos = this.getCanvasPos(e.touches[0]);
+            this.startInteraction(pos.x, pos.y);
+        }
+    }
+
+    private startInteraction(x: number, y: number): void {
+        const handle = this.getResizeHandle(x, y);
         if (handle) {
             this.isResizing = true;
             this.resizeHandle = handle;
-            this.dragStartX = pos.x;
-            this.dragStartY = pos.y;
+            this.dragStartX = x;
+            this.dragStartY = y;
             this.dragStartCropX = this.cropX;
             this.dragStartCropY = this.cropY;
+            this.dragStartCropW = this.cropW;
+            this.dragStartCropH = this.cropH;
             return;
         }
 
-        if (this.isInsideCropBox(pos.x, pos.y)) {
+        if (this.isInsideCropBox(x, y)) {
             this.isDragging = true;
-            this.dragStartX = pos.x;
-            this.dragStartY = pos.y;
+            this.dragStartX = x;
+            this.dragStartY = y;
             this.dragStartCropX = this.cropX;
             this.dragStartCropY = this.cropY;
         }
@@ -257,80 +309,89 @@ export class ImageCropperModal extends Modal {
 
     private onMouseMove(e: MouseEvent): void {
         const pos = this.getCanvasPos(e);
+        this.moveInteraction(pos.x, pos.y);
 
+        // 更新鼠标样式（不在拖拽中时）
+        if (!this.isDragging && !this.isResizing) {
+            const handle = this.getResizeHandle(pos.x, pos.y);
+            if (handle) {
+                this.canvas.style.cursor = handle === 'nw' || handle === 'se' ? 'nwse-resize' : 'nesw-resize';
+            } else if (this.isInsideCropBox(pos.x, pos.y)) {
+                this.canvas.style.cursor = 'move';
+            } else {
+                this.canvas.style.cursor = 'default';
+            }
+        }
+    }
+
+    private onTouchMove(e: TouchEvent): void {
+        e.preventDefault();
+        if (e.touches.length === 1) {
+            const pos = this.getCanvasPos(e.touches[0]);
+            this.moveInteraction(pos.x, pos.y);
+        }
+    }
+
+    private moveInteraction(x: number, y: number): void {
         if (this.isDragging) {
-            const dx = pos.x - this.dragStartX;
-            const dy = pos.y - this.dragStartY;
+            const dx = x - this.dragStartX;
+            const dy = y - this.dragStartY;
 
-            let newX = this.dragStartCropX + dx;
-            let newY = this.dragStartCropY + dy;
-
-            // 限制在图片范围内
-            newX = Math.max(this.imgDisplayX, Math.min(newX, this.imgDisplayX + this.imgDisplayW - this.cropW));
-            newY = Math.max(this.imgDisplayY, Math.min(newY, this.imgDisplayY + this.imgDisplayH - this.cropH));
-
-            this.cropX = newX;
-            this.cropY = newY;
-            this.draw();
+            this.cropX = Math.max(
+                this.imgDisplayX,
+                Math.min(this.dragStartCropX + dx, this.imgDisplayX + this.imgDisplayW - this.cropW),
+            );
+            this.cropY = Math.max(
+                this.imgDisplayY,
+                Math.min(this.dragStartCropY + dy, this.imgDisplayY + this.imgDisplayH - this.cropH),
+            );
+            this.scheduleRedraw();
             return;
         }
 
         if (this.isResizing) {
-            const dx = pos.x - this.dragStartX;
-            const dy = pos.y - this.dragStartY;
-            this.handleResize(dx, dy);
-            this.draw();
-            return;
-        }
-
-        // 更新鼠标样式
-        const handle = this.getResizeHandle(pos.x, pos.y);
-        if (handle) {
-            this.canvas.style.cursor = handle === 'nw' || handle === 'se' ? 'nwse-resize' : 'nesw-resize';
-        } else if (this.isInsideCropBox(pos.x, pos.y)) {
-            this.canvas.style.cursor = 'move';
-        } else {
-            this.canvas.style.cursor = 'default';
+            const dx = x - this.dragStartX;
+            this.handleResize(dx);
+            this.scheduleRedraw();
         }
     }
 
-    private handleResize(dx: number, dy: number): void {
-        const minW = 80;
+    private handleResize(dx: number): void {
+        const minW = 100;
         const minH = minW / COVER_ASPECT_RATIO;
 
-        let newW = this.cropW;
-        let newH = this.cropH;
-        let newX = this.dragStartCropX;
-        let newY = this.dragStartCropY;
+        let newW: number, newH: number, newX: number, newY: number;
 
-        // 根据拖拽的角来确定缩放方向，保持宽高比
         switch (this.resizeHandle) {
             case 'se':
-                newW = this.cropW + dx;
+                newW = this.dragStartCropW + dx;
                 newH = newW / COVER_ASPECT_RATIO;
+                newX = this.dragStartCropX;
+                newY = this.dragStartCropY;
                 break;
             case 'sw':
-                newW = this.cropW - dx;
+                newW = this.dragStartCropW - dx;
                 newH = newW / COVER_ASPECT_RATIO;
                 newX = this.dragStartCropX + dx;
+                newY = this.dragStartCropY;
                 break;
             case 'ne':
-                newW = this.cropW + dx;
+                newW = this.dragStartCropW + dx;
                 newH = newW / COVER_ASPECT_RATIO;
-                newY = this.dragStartCropY - (newH - this.cropH);
+                newX = this.dragStartCropX;
+                newY = this.dragStartCropY + this.dragStartCropH - newH;
                 break;
             case 'nw':
-                newW = this.cropW - dx;
+                newW = this.dragStartCropW - dx;
                 newH = newW / COVER_ASPECT_RATIO;
                 newX = this.dragStartCropX + dx;
-                newY = this.dragStartCropY - (newH - this.cropH);
+                newY = this.dragStartCropY + this.dragStartCropH - newH;
                 break;
+            default:
+                return;
         }
 
-        // 最小尺寸限制
         if (newW < minW || newH < minH) return;
-
-        // 边界限制
         if (newX < this.imgDisplayX) return;
         if (newY < this.imgDisplayY) return;
         if (newX + newW > this.imgDisplayX + this.imgDisplayW) return;
@@ -347,8 +408,12 @@ export class ImageCropperModal extends Modal {
         this.isResizing = false;
     }
 
+    private onTouchEnd(): void {
+        this.isDragging = false;
+        this.isResizing = false;
+    }
+
     private doCrop(): void {
-        // 将画布上的裁剪区域映射回原图坐标
         const scaleX = this.image.width / this.imgDisplayW;
         const scaleY = this.image.height / this.imgDisplayH;
 
@@ -357,7 +422,6 @@ export class ImageCropperModal extends Modal {
         const srcW = this.cropW * scaleX;
         const srcH = this.cropH * scaleY;
 
-        // 用 canvas 裁剪
         const outputCanvas = document.createElement('canvas');
         outputCanvas.width = Math.round(srcW);
         outputCanvas.height = Math.round(srcH);
@@ -369,7 +433,6 @@ export class ImageCropperModal extends Modal {
             0, 0, outputCanvas.width, outputCanvas.height,
         );
 
-        // 导出为 blob
         outputCanvas.toBlob((blob) => {
             if (!blob) {
                 new Notice('裁剪失败');
@@ -386,6 +449,9 @@ export class ImageCropperModal extends Modal {
     }
 
     onClose() {
+        if (this.rafId !== null) {
+            cancelAnimationFrame(this.rafId);
+        }
         this.contentEl.empty();
     }
 }

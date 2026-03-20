@@ -1,5 +1,5 @@
 
-import { TFile, TFolder, Vault } from 'obsidian';
+import { TFile, Vault } from 'obsidian';
 
 // 图片元数据接口
 export interface ImageMetadata {
@@ -8,6 +8,7 @@ export interface ImageMetadata {
     media_id: string;
     uploadTime: number;
 }
+
 
 // 发布记录
 export interface PublishRecord {

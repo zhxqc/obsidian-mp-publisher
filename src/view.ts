@@ -207,13 +207,13 @@ export class MPView extends ItemView {
 
                     setTimeout(() => {
                         this.copyButton.disabled = false;
-                        this.copyButton.setText('复制为公众号格式');
+                        this.copyButton.setText('复制到公众号');
                     }, 2000);
                 } catch (error) {
                     this.copyButton.setText('复制失败');
                     setTimeout(() => {
                         this.copyButton.disabled = false;
-                        this.copyButton.setText('复制为公众号格式');
+                        this.copyButton.setText('复制到公众号');
                     }, 2000);
                 }
             }

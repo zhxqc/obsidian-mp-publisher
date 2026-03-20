@@ -156,7 +156,8 @@ export class ProgressIndicator {
         this.statusText.textContent = message;
         this.statusText.classList.add('error');
 
-        // 错误时不自动隐藏，让用户看到
+        // 3 秒后自动隐藏
+        setTimeout(() => this.hide(), 3000);
     }
 }
 
