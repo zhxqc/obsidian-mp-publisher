@@ -3,14 +3,14 @@
 .mp-content-section {
   font-size: 16px;
   color: #333;
-  line-height: 1.8;
+  line-height: 1.6;
   letter-spacing: 0.02em;
   font-family: 'Times New Roman', 'Noto Serif SC', 'Source Han Serif CN', Georgia, serif;
 }
 
 /* 标题 */
 .mp-content-section h1 {
-  margin: 36px 0 18px;
+  margin: 24px 0 12px;
   font-size: 1.8em;
   font-weight: bold;
   color: #1a365d;
@@ -20,7 +20,7 @@
 }
 
 .mp-content-section h2 {
-  margin: 30px 0 15px;
+  margin: 20px 0 10px;
   font-size: 1.4em;
   font-weight: bold;
   color: #2b6cb0;
@@ -29,7 +29,7 @@
 }
 
 .mp-content-section h3 {
-  margin: 24px 0 12px;
+  margin: 18px 0 8px;
   font-size: 1.2em;
   font-weight: bold;
   color: #2c5282;
@@ -38,7 +38,7 @@
 .mp-content-section h4,
 .mp-content-section h5,
 .mp-content-section h6 {
-  margin: 20px 0 10px;
+  margin: 16px 0 8px;
   font-size: 1em;
   font-weight: bold;
   color: #2a4365;
@@ -46,8 +46,8 @@
 
 /* 段落 */
 .mp-content-section p {
-  margin: 1em 0;
-  line-height: 1.8;
+  margin: 0.6em 0;
+  line-height: 1.6;
   text-align: justify;
   color: #333;
 }
@@ -61,7 +61,7 @@
 
 .mp-content-section li {
   margin: 0.4em 0;
-  line-height: 1.8;
+  line-height: 1.6;
   color: #333;
 }
 
@@ -177,7 +177,7 @@
   max-width: 100%;
   height: auto;
   display: block;
-  margin: 1.5em auto;
+  margin: 0.8em auto 0.4em;
 }
 
 /* 脚注 */

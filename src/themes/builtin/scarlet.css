@@ -3,14 +3,14 @@
 .mp-content-section {
   font-size: 16px;
   color: #3f3f3f;
-  line-height: 1.75;
+  line-height: 1.6;
   letter-spacing: 0.03em;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
 }
 
 /* 标题 */
 .mp-content-section h1 {
-  margin: 32px 0 16px;
+  margin: 24px 0 12px;
   font-size: 1.8em;
   font-weight: bold;
   color: #fff;
@@ -20,7 +20,7 @@
 }
 
 .mp-content-section h2 {
-  margin: 28px 0 14px;
+  margin: 20px 0 10px;
   font-size: 1.4em;
   font-weight: bold;
   color: #dc2626;
@@ -30,7 +30,7 @@
 }
 
 .mp-content-section h3 {
-  margin: 24px 0 12px;
+  margin: 18px 0 8px;
   font-size: 1.2em;
   font-weight: bold;
   color: #b91c1c;
@@ -41,7 +41,7 @@
 .mp-content-section h4,
 .mp-content-section h5,
 .mp-content-section h6 {
-  margin: 20px 0 10px;
+  margin: 16px 0 8px;
   font-size: 1em;
   font-weight: bold;
   color: #991b1b;
@@ -49,8 +49,8 @@
 
 /* 段落 */
 .mp-content-section p {
-  margin: 15px 0;
-  line-height: 1.75;
+  margin: 0.6em 0;
+  line-height: 1.6;
   color: #3f3f3f;
 }
 
@@ -63,7 +63,7 @@
 
 .mp-content-section li {
   margin: 8px 0;
-  line-height: 1.75;
+  line-height: 1.6;
   color: #3f3f3f;
 }
 
@@ -183,7 +183,7 @@
   max-width: 100%;
   height: auto;
   display: block;
-  margin: 1.5em auto;
+  margin: 0.8em auto 0.4em;
   border-radius: 6px;
 }
 
