@@ -204,6 +204,18 @@ export class MPSettingTab extends PluginSettingTab {
                     });
                 }));
 
+        // 开启留言
+        new Setting(containerEl)
+            .setName('开启留言')
+            .setDesc('发布文章时默认开启留言功能（评论）')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settingsManager.getSettings().enableComment)
+                .onChange(async (value) => {
+                    await this.plugin.settingsManager.updateSettings({
+                        enableComment: value,
+                    });
+                }));
+
         // 调试模式
         new Setting(containerEl)
             .setName('调试模式')

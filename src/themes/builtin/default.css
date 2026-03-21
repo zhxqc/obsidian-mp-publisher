@@ -3,7 +3,7 @@
 .mp-content-section {
   font-size: 16px;
   color: #4a4a4a;
-  line-height: 1.6;
+  line-height: 1.8;
   letter-spacing: 0.03em;
   font-family: Optima-Regular, Optima, PingFangSC-light, PingFangTC-light, 'PingFang SC', Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
 }
@@ -47,8 +47,8 @@
 
 /* 段落 */
 .mp-content-section p {
-  margin: 0.6em 0;
-  line-height: 1.6;
+  margin: 1em 0;
+  line-height: 1.8;
   font-size: 1em;
   color: #4a4a4a;
 }
@@ -63,14 +63,14 @@
 .mp-content-section li {
   font-size: 1em;
   color: #4a4a4a;
-  line-height: 1.6;
+  line-height: 1.8;
 }
 
 .mp-content-section .task-list-item {
   list-style: none;
   font-size: 1em;
   color: #4a4a4a;
-  line-height: 1.6;
+  line-height: 1.8;
 }
 
 /* 引用 */
@@ -101,7 +101,7 @@
   margin: 1.2em 0;
   padding: 1em;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.8;
   white-space: pre-wrap;
   overflow-x: auto;
 }

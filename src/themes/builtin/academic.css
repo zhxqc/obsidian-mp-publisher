@@ -3,7 +3,7 @@
 .mp-content-section {
   font-size: 16px;
   color: #333;
-  line-height: 1.6;
+  line-height: 1.8;
   letter-spacing: 0.02em;
   font-family: 'Times New Roman', 'Noto Serif SC', 'Source Han Serif CN', Georgia, serif;
 }
@@ -46,8 +46,8 @@
 
 /* 段落 */
 .mp-content-section p {
-  margin: 0.6em 0;
-  line-height: 1.6;
+  margin: 1em 0;
+  line-height: 1.8;
   text-align: justify;
   color: #333;
 }
@@ -61,7 +61,7 @@
 
 .mp-content-section li {
   margin: 0.4em 0;
-  line-height: 1.6;
+  line-height: 1.8;
   color: #333;
 }
 
@@ -88,7 +88,7 @@
   padding: 1em;
   margin: 1.2em 0;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.8;
   overflow-x: auto;
 }
 

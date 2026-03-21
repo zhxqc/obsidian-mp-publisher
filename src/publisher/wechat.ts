@@ -533,6 +533,7 @@ export class WechatPublisher {
             };
 
             const authorName = account?.author || '';
+            const needOpenComment = this.plugin.settings.enableComment ? 1 : 0;
 
             // 使用带重试机制的请求
             let response = await this.requestWithTokenRetry(async (token) => {
@@ -551,7 +552,7 @@ export class WechatPublisher {
                                 digest: '',
                                 show_cover_pic: thumb_media_id ? 1 : 0,
                                 content_source_url: '',
-                                need_open_comment: 0,
+                                need_open_comment: needOpenComment,
                                 only_fans_can_comment: 0
                             }
                         })
@@ -569,7 +570,7 @@ export class WechatPublisher {
                                 digest: '',
                                 show_cover_pic: thumb_media_id ? 1 : 0,
                                 content_source_url: '',
-                                need_open_comment: 0,
+                                need_open_comment: needOpenComment,
                                 only_fans_can_comment: 0
                             }]
                         })
@@ -597,7 +598,7 @@ export class WechatPublisher {
                                 digest: '',
                                 show_cover_pic: thumb_media_id ? 1 : 0,
                                 content_source_url: '',
-                                need_open_comment: 0,
+                                need_open_comment: needOpenComment,
                                 only_fans_can_comment: 0
                             }]
                         })

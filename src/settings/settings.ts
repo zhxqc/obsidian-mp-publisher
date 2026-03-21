@@ -26,6 +26,7 @@ export interface MPSettings {
     wechatAppId: string;
     wechatAppSecret: string;
     imageAttachmentLocation: string;
+    enableComment: boolean;
     debugMode: boolean;
 }
 
@@ -42,6 +43,7 @@ const DEFAULT_SETTINGS: MPSettings = {
     wechatAppId: '',
     wechatAppSecret: '',
     imageAttachmentLocation: '${filename}__assets',
+    enableComment: true,
     debugMode: false,
 };
 
