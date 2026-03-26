@@ -258,12 +258,61 @@ export class WechatPublisher {
         }
     }
 
+    // 上传图文正文内的图片（使用 uploadimg 接口，返回的 URL 才能在正文中使用）
+    async uploadInlineImage(
+        imageData: ArrayBuffer,
+        fileName: string,
+        account?: WechatAccountConfig
+    ): Promise<string | null> {
+        try {
+            const boundary = '----WebKitFormBoundary' + Math.random().toString(16).substring(2);
+
+            const formDataHeader = `--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="${fileName}"\r\nContent-Type: image/jpeg\r\n\r\n`;
+            const formDataFooter = `\r\n--${boundary}--`;
+
+            const headerArray = new TextEncoder().encode(formDataHeader);
+            const footerArray = new TextEncoder().encode(formDataFooter);
+
+            const combinedBuffer = new Uint8Array(headerArray.length + imageData.byteLength + footerArray.length);
+            combinedBuffer.set(headerArray, 0);
+            combinedBuffer.set(new Uint8Array(imageData), headerArray.length);
+            combinedBuffer.set(footerArray, headerArray.length + imageData.byteLength);
+
+            const response = await this.requestWithTokenRetry(async (token) => {
+                return requestUrl({
+                    url: `https://api.weixin.qq.com/cgi-bin/media/uploadimg?access_token=${token}`,
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': `multipart/form-data; boundary=${boundary}`
+                    },
+                    body: combinedBuffer.buffer
+                });
+            }, account);
+
+            this.logger.debug(`uploadInlineImage response: ${JSON.stringify(response)}`);
+
+            if (response.json.errcode && response.json.errcode !== 0) {
+                this.handleWechatError(response.json);
+                throw new Error(response.json.errmsg);
+            }
+
+            return response.json.url;
+        } catch (error) {
+            this.logger.error('上传正文图片失败:', error);
+            if (error instanceof Error && !error.message.includes('errcode')) {
+                new Notice('上传正文图片失败，请检查网络或配置');
+            }
+            return null;
+        }
+    }
+
     // 处理文档中的图片
     async processDocumentImages(
         content: string,
         file: TFile,
         assetFolderPath?: string,
-        onProgress?: (current: number, total: number, imageName?: string) => void
+        onProgress?: (current: number, total: number, imageName?: string) => void,
+        account?: WechatAccountConfig
     ): Promise<string> {
         try {
             if (!file.parent) {
@@ -305,7 +354,7 @@ export class WechatPublisher {
                 }
 
                 // 处理图片并获取微信 URL (现在也处理 http 图片以供自动上传)
-                const imageUrl = await this.processImage(src, file, metadata, resolvedAssetFolderPath);
+                const imageUrl = await this.processImage(src, file, metadata, resolvedAssetFolderPath, account);
                 if (!imageUrl) continue;
 
                 // 更新图片 src 为微信 URL
@@ -326,7 +375,8 @@ export class WechatPublisher {
         imagePath: string,
         file: TFile,
         metadata: any,
-        assetFolderPath: string
+        assetFolderPath: string,
+        account?: WechatAccountConfig
     ): Promise<string | null> {
         try {
             // 1. 处理 Base64 Data URL (通常是公式转换生成的)
@@ -347,8 +397,7 @@ export class WechatPublisher {
                 const arrayBuffer = bytes.buffer;
 
                 this.logger.debug(`上传生成的图片: ${fileName}`);
-                const uploadResult = await this.uploadImageAndGetUrl(arrayBuffer, fileName);
-                return uploadResult ? uploadResult.url : null;
+                return await this.uploadInlineImage(arrayBuffer, fileName, account);
             }
 
             // 2. 处理网络图片 (http/https)
@@ -365,14 +414,14 @@ export class WechatPublisher {
                         }
 
                         const fileName = imagePath.split('/').pop()?.split('?')[0] || `web_image_${Date.now()}.png`;
-                        const uploadResult = await this.uploadImageAndGetUrl(response.arrayBuffer, fileName);
+                        const url = await this.uploadInlineImage(response.arrayBuffer, fileName, account);
 
-                        if (!uploadResult) return null;
+                        if (!url) return null;
 
                         imageMetadata = {
-                            fileName: imagePath, // 使用完整URL作为Key来缓存
-                            url: uploadResult.url,
-                            media_id: uploadResult.media_id,
+                            fileName: imagePath,
+                            url,
+                            media_id: '',
                             uploadTime: Date.now()
                         };
                         addImageMetadata(metadata, imagePath, imageMetadata);
@@ -385,14 +434,20 @@ export class WechatPublisher {
                 return imageMetadata.url;
             }
 
-            // 3. 处理常规文件路径
-            // 从路径中获取文件名
+            // 3. 处理常规文件路径（包括 app:// 格式）
             let fileName = imagePath.split('/').pop();
             if (!fileName) return null;
 
-            // 如果文件名包含查询参数，去除它们
+            // 去除查询参数（app:// URL 常带时间戳参数）
             if (fileName.includes('?')) {
                 fileName = fileName.split('?')[0];
+            }
+
+            // 解码 URL 编码的文件名（中文等特殊字符会被编码）
+            try {
+                fileName = decodeURIComponent(fileName);
+            } catch {
+                // 解码失败则保持原样
             }
 
             // 检查图片是否已上传
@@ -409,16 +464,16 @@ export class WechatPublisher {
                 // 读取图片数据
                 const arrayBuffer = await this.plugin.app.vault.readBinary(linkedFile);
 
-                // 上传图片到微信
-                const uploadResult = await this.uploadImageAndGetUrl(arrayBuffer, fileName);
+                // 上传图片到微信（使用 uploadimg 接口，正文图片必须使用此接口）
+                const url = await this.uploadInlineImage(arrayBuffer, fileName, account);
 
-                if (!uploadResult) return null;
+                if (!url) return null;
 
                 // 保存图片元数据
                 imageMetadata = {
                     fileName,
-                    url: uploadResult.url,
-                    media_id: uploadResult.media_id,
+                    url,
+                    media_id: '',
                     uploadTime: Date.now()
                 };
                 addImageMetadata(metadata, fileName, imageMetadata);
@@ -493,7 +548,8 @@ export class WechatPublisher {
                         totalSteps, 
                         `正在上传图片 ${current + 1}/${total}: ${imageName || ''}`.trim()
                     );
-                }
+                },
+                account
             );
 
             // 清理HTML内容，移除Obsidian UI元素

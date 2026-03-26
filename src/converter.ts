@@ -67,13 +67,14 @@ export class MPConverter {
         // 处理 callout（Obsidian 的提示框）
         this.processCallouts(container);
 
-        // 处理图片
-        container.querySelectorAll('span.internal-embed[alt][src]').forEach(async el => {
+        // 处理图片（同步遍历，避免 forEach(async) 不等待的问题）
+        const embeds = container.querySelectorAll('span.internal-embed[alt][src]');
+        for (const el of Array.from(embeds)) {
             const originalSpan = el as HTMLElement;
             const src = originalSpan.getAttribute('src');
             const alt = originalSpan.getAttribute('alt');
 
-            if (!src) return;
+            if (!src) continue;
 
             try {
                 const linktext = src.split('|')[0];
@@ -88,7 +89,7 @@ export class MPConverter {
             } catch (error) {
                 console.error('图片处理失败:', error);
             }
-        });
+        }
     }
     /** Callout 类型到颜色的映射 */
     private static readonly CALLOUT_COLORS: Record<string, { bg: string; border: string; title: string; icon: string }> = {
