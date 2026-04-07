@@ -1,0 +1,326 @@
+/* 黄历主题 - 传统中式古典风格 */
+
+.mp-content-section {
+  font-size: 16px;
+  color: #3d3332;
+  line-height: 2;
+  letter-spacing: 0.05em;
+  font-family: KaiTi, "楷体", STKaiti, "华文楷体", FangSong, "仿宋", STFangsong, serif;
+  background: #fefdfb;
+  padding: 8px 0;
+}
+
+/* 标题通用 - 红底白字居中标签样式 */
+.mp-content-section h1 {
+  margin: 36px auto 20px;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #fff;
+  background: #c23a2b;
+  text-align: center;
+  padding: 10px 32px;
+  border-radius: 6px;
+  letter-spacing: 0.2em;
+  line-height: 1.6;
+  max-width: 80%;
+  display: block;
+  box-sizing: border-box;
+}
+
+.mp-content-section h2 {
+  margin: 32px auto 18px;
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #fff;
+  background: #c23a2b;
+  text-align: center;
+  padding: 8px 28px;
+  border-radius: 4px;
+  letter-spacing: 0.25em;
+  line-height: 1.6;
+  max-width: 60%;
+  display: block;
+  box-sizing: border-box;
+}
+
+.mp-content-section h3 {
+  margin: 28px auto 14px;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #fff;
+  background: #c23a2b;
+  text-align: center;
+  padding: 6px 24px;
+  border-radius: 4px;
+  letter-spacing: 0.2em;
+  line-height: 1.6;
+  max-width: 50%;
+  display: block;
+  box-sizing: border-box;
+}
+
+.mp-content-section h4,
+.mp-content-section h5,
+.mp-content-section h6 {
+  margin: 24px 0 12px;
+  font-size: 1em;
+  font-weight: bold;
+  color: #c23a2b;
+  letter-spacing: 0.15em;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* 段落 */
+.mp-content-section p {
+  margin: 1.2em 0;
+  line-height: 2;
+  font-size: 1em;
+  color: #3d3332;
+  text-align: justify;
+}
+
+/* 列表 */
+.mp-content-section ul,
+.mp-content-section ol {
+  padding-left: 28px;
+  color: #3d3332;
+  margin: 1em 0;
+}
+
+.mp-content-section li {
+  font-size: 1em;
+  color: #3d3332;
+  line-height: 2;
+  margin: 4px 0;
+}
+
+.mp-content-section .task-list-item {
+  list-style: none;
+  font-size: 1em;
+  color: #3d3332;
+  line-height: 2;
+}
+
+/* 引用 - 古典竖线引用 */
+.mp-content-section blockquote {
+  border-left: 3px solid #c23a2b;
+  border-radius: 0 4px 4px 0;
+  padding: 12px 20px;
+  background: #fdf6f0;
+  margin: 1.2em 0;
+  color: #6b5c58;
+  font-style: normal;
+  word-wrap: break-word;
+}
+
+.mp-content-section blockquote p {
+  margin: 0;
+  padding: 0;
+  line-height: inherit;
+}
+
+/* 代码块 */
+.mp-content-section pre {
+  color: #3d3332;
+  background: #faf5ef;
+  border-radius: 6px;
+  border: 1px solid #e8ddd4;
+  margin: 1.2em 0;
+  padding: 1em;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.mp-content-section pre .mp-code-header {
+  margin-bottom: 1em;
+  display: flex;
+  gap: 6px;
+}
+
+.mp-content-section pre .mp-code-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.mp-content-section pre .mp-code-dot:nth-child(1) { background-color: #c23a2b; }
+.mp-content-section pre .mp-code-dot:nth-child(2) { background-color: #d4a36a; }
+.mp-content-section pre .mp-code-dot:nth-child(3) { background-color: #8b9e6b; }
+
+.mp-content-section pre code {
+  color: #3d3332;
+}
+
+/* 行内代码 */
+.mp-content-section code:not(pre code) {
+  background: #fdf6f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #c23a2b;
+  font-size: 14px;
+  border: 1px solid #e8ddd4;
+}
+
+/* 链接 */
+.mp-content-section a {
+  color: #c23a2b;
+  text-decoration: none;
+  border-bottom: 1px solid #c23a2b;
+}
+
+/* 强调 - 加粗红色 */
+.mp-content-section strong {
+  font-weight: bold;
+  color: #c23a2b;
+}
+
+.mp-content-section em {
+  font-style: italic;
+  color: #8b6914;
+}
+
+.mp-content-section del {
+  text-decoration: line-through;
+  color: #999;
+}
+
+/* 表格 */
+.mp-content-section table {
+  width: 100%;
+  margin: 1em 0;
+  border-collapse: collapse;
+  border: 1px solid #e8ddd4;
+}
+
+.mp-content-section th {
+  background: #c23a2b;
+  font-weight: bold;
+  color: #fff;
+  padding: 10px 15px;
+  border: 1px solid #e8ddd4;
+  letter-spacing: 0.1em;
+  font-size: 1em;
+}
+
+.mp-content-section td {
+  padding: 10px 15px;
+  border: 1px solid #e8ddd4;
+  color: #3d3332;
+  font-size: 1em;
+}
+
+.mp-content-section tr:nth-child(even) {
+  background-color: #fdf6f0;
+}
+
+/* 分隔线 - 细灰线 */
+.mp-content-section hr {
+  border: none;
+  height: 1px;
+  background: #ddd3c9;
+  margin: 28px 0;
+}
+
+/* 图片 */
+.mp-content-section img {
+  max-width: 100%;
+  height: auto;
+  margin: 1em auto 0.5em;
+  display: block;
+  border-radius: 4px;
+}
+
+/* 脚注 */
+.mp-content-section .footnote-ref,
+.mp-content-section .footnote-backref {
+  color: #c23a2b;
+  text-decoration: none;
+  font-size: 0.9em;
+}
+
+/* Callout 提示框 */
+.mp-content-section .mp-callout {
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 1em 0;
+  border-left: 4px solid #c23a2b;
+  background: #fdf6f0;
+}
+
+.mp-content-section .mp-callout-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-weight: bold;
+  font-size: 1em;
+  line-height: 1.5;
+}
+
+.mp-content-section .mp-callout-content {
+  font-size: 0.95em;
+  line-height: 1.8;
+  color: #3d3332;
+}
+
+.mp-content-section .mp-callout-content p {
+  margin: 4px 0;
+  padding: 0;
+  line-height: 1.8;
+}
+
+.mp-content-section .mp-callout-note { border-left-color: #c23a2b; background: #fdf6f0; }
+.mp-content-section .mp-callout-note .mp-callout-title { color: #c23a2b; }
+.mp-content-section .mp-callout-info { border-left-color: #c23a2b; background: #fdf6f0; }
+.mp-content-section .mp-callout-info .mp-callout-title { color: #c23a2b; }
+.mp-content-section .mp-callout-tip { border-left-color: #8b9e6b; background: #f4f7ef; }
+.mp-content-section .mp-callout-tip .mp-callout-title { color: #6b8040; }
+.mp-content-section .mp-callout-hint { border-left-color: #8b9e6b; background: #f4f7ef; }
+.mp-content-section .mp-callout-hint .mp-callout-title { color: #6b8040; }
+.mp-content-section .mp-callout-important { border-left-color: #8b6914; background: #fdf8ee; }
+.mp-content-section .mp-callout-important .mp-callout-title { color: #8b6914; }
+.mp-content-section .mp-callout-warning { border-left-color: #d4a36a; background: #fdf8ee; }
+.mp-content-section .mp-callout-warning .mp-callout-title { color: #b8862d; }
+.mp-content-section .mp-callout-caution { border-left-color: #d4a36a; background: #fdf8ee; }
+.mp-content-section .mp-callout-caution .mp-callout-title { color: #b8862d; }
+.mp-content-section .mp-callout-danger { border-left-color: #a01e14; background: #fcecea; }
+.mp-content-section .mp-callout-danger .mp-callout-title { color: #a01e14; }
+.mp-content-section .mp-callout-error { border-left-color: #a01e14; background: #fcecea; }
+.mp-content-section .mp-callout-error .mp-callout-title { color: #a01e14; }
+.mp-content-section .mp-callout-bug { border-left-color: #a01e14; background: #fcecea; }
+.mp-content-section .mp-callout-bug .mp-callout-title { color: #a01e14; }
+.mp-content-section .mp-callout-success { border-left-color: #6b8040; background: #f4f7ef; }
+.mp-content-section .mp-callout-success .mp-callout-title { color: #6b8040; }
+.mp-content-section .mp-callout-check { border-left-color: #6b8040; background: #f4f7ef; }
+.mp-content-section .mp-callout-check .mp-callout-title { color: #6b8040; }
+.mp-content-section .mp-callout-done { border-left-color: #6b8040; background: #f4f7ef; }
+.mp-content-section .mp-callout-done .mp-callout-title { color: #6b8040; }
+.mp-content-section .mp-callout-question { border-left-color: #d4a36a; background: #fdf8ee; }
+.mp-content-section .mp-callout-question .mp-callout-title { color: #b8862d; }
+.mp-content-section .mp-callout-help { border-left-color: #d4a36a; background: #fdf8ee; }
+.mp-content-section .mp-callout-help .mp-callout-title { color: #b8862d; }
+.mp-content-section .mp-callout-faq { border-left-color: #d4a36a; background: #fdf8ee; }
+.mp-content-section .mp-callout-faq .mp-callout-title { color: #b8862d; }
+.mp-content-section .mp-callout-failure { border-left-color: #a01e14; background: #fcecea; }
+.mp-content-section .mp-callout-failure .mp-callout-title { color: #a01e14; }
+.mp-content-section .mp-callout-fail { border-left-color: #a01e14; background: #fcecea; }
+.mp-content-section .mp-callout-fail .mp-callout-title { color: #a01e14; }
+.mp-content-section .mp-callout-missing { border-left-color: #a01e14; background: #fcecea; }
+.mp-content-section .mp-callout-missing .mp-callout-title { color: #a01e14; }
+.mp-content-section .mp-callout-abstract { border-left-color: #7a6a5e; background: #f5f0eb; }
+.mp-content-section .mp-callout-abstract .mp-callout-title { color: #7a6a5e; }
+.mp-content-section .mp-callout-summary { border-left-color: #7a6a5e; background: #f5f0eb; }
+.mp-content-section .mp-callout-summary .mp-callout-title { color: #7a6a5e; }
+.mp-content-section .mp-callout-tldr { border-left-color: #7a6a5e; background: #f5f0eb; }
+.mp-content-section .mp-callout-tldr .mp-callout-title { color: #7a6a5e; }
+.mp-content-section .mp-callout-example { border-left-color: #8b6914; background: #fdf8ee; }
+.mp-content-section .mp-callout-example .mp-callout-title { color: #8b6914; }
+.mp-content-section .mp-callout-todo { border-left-color: #c23a2b; background: #fdf6f0; }
+.mp-content-section .mp-callout-todo .mp-callout-title { color: #c23a2b; }
+.mp-content-section .mp-callout-quote { border-left-color: #7a6a5e; background: #f5f0eb; }
+.mp-content-section .mp-callout-quote .mp-callout-title { color: #7a6a5e; }
+.mp-content-section .mp-callout-cite { border-left-color: #7a6a5e; background: #f5f0eb; }
+.mp-content-section .mp-callout-cite .mp-callout-title { color: #7a6a5e; }

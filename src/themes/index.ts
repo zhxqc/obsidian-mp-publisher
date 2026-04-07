@@ -13,6 +13,7 @@ import greenFreshCSS from './builtin/green-fresh.css';
 import orangeWarmCSS from './builtin/orange-warm.css';
 import scarletCSS from './builtin/scarlet.css';
 import academicCSS from './builtin/academic.css';
+import almanacCSS from './builtin/almanac.css';
 
 /** 所有内置主题 */
 export const builtinThemes: CSSTheme[] = [
@@ -85,6 +86,15 @@ export const builtinThemes: CSSTheme[] = [
         description: '严谨专业的学术主题',
         source: ThemeSource.BUILTIN,
         css: academicCSS,
+        author: 'MP Publisher',
+        isVisible: true,
+    },
+    {
+        id: 'almanac',
+        name: '黄历',
+        description: '传统中式古典黄历风格主题',
+        source: ThemeSource.BUILTIN,
+        css: almanacCSS,
         author: 'MP Publisher',
         isVisible: true,
     },
